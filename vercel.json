@@ -1,7 +1,4 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/public/index.html" },
-    { "source": "/src/:path*", "destination": "/src/:path*" },
-    { "source": "/:path*", "destination": "/public/index.html" }
-  ]
+  "cleanUrls": true,
+  "trailingSlash": false
 }
