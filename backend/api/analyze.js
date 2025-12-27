@@ -2,8 +2,8 @@
 // Chứa TẤT CẢ thuật toán trong 1 file duy nhất
 
 // ============ CONFIG ============
-const API_SECRET_KEY = process.env.API_SECRET_KEY || 'your-secret-key-change-this';
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS || '*';
+const API_SECRET_KEY = process.env.API_SECRET_KEY || 'duchuy208';
+const ALLOWED_ORIGINS = ''process.env.ALLOWED_ORIGINS || ' https://toolbcrvip.vercel.app/';
 
 // ============ RATE LIMITING ============
 const requestCounts = new Map();
