@@ -2,7 +2,9 @@
 (function() {
   'use strict';
 
-  const VALID_PASSWORD = 'toolbcrv9';
+  const VALID_PASSWORD = 'toolvip9'; // ĐỔI MẬT KHẨU TẠI ĐÂY
+  const PASSWORD_VERSION = 'vư'; // TĂNG LÊN KHI ĐỔI PASS (v1, v2, v3...)
+  
   const SESSION_KEY = 'metabot_session';
   const SESSION_DURATION = 24 * 60 * 60 * 1000;
 
@@ -19,6 +21,14 @@
         const data = JSON.parse(session);
         const now = Date.now();
         
+        // Kiểm tra password version - nếu khác thì đá ra
+        if (data.passwordVersion !== PASSWORD_VERSION) {
+          console.log('Password đã thay đổi - yêu cầu đăng nhập lại');
+          localStorage.removeItem(SESSION_KEY);
+          return false;
+        }
+        
+        // Kiểm tra session còn hạn không
         if (now - data.timestamp < SESSION_DURATION) {
           unlockApp();
           return true;
@@ -28,6 +38,7 @@
       }
     } catch (e) {
       console.error('Session check error:', e);
+      localStorage.removeItem(SESSION_KEY);
     }
     return false;
   }
@@ -36,7 +47,8 @@
     try {
       const session = {
         timestamp: Date.now(),
-        version: '9.0'
+        version: '9.0',
+        passwordVersion: PASSWORD_VERSION // Lưu password version
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     } catch (e) {
@@ -99,7 +111,28 @@
     logout: function() {
       localStorage.removeItem(SESSION_KEY);
       window.location.reload();
+    },
+    // Hàm kiểm tra phiên bản password (tự động chạy mỗi 10 giây)
+    checkPasswordVersion: function() {
+      const session = localStorage.getItem(SESSION_KEY);
+      if (session) {
+        try {
+          const data = JSON.parse(session);
+          if (data.passwordVersion !== PASSWORD_VERSION) {
+            console.log('🔒 Mật khẩu đã thay đổi - Đăng xuất...');
+            localStorage.removeItem(SESSION_KEY);
+            window.location.reload();
+          }
+        } catch (e) {
+          console.error('Check version error:', e);
+        }
+      }
     }
   };
+
+  // Tự động kiểm tra password version mỗi 10 giây
+  setInterval(() => {
+    window.MetaBotAuth.checkPasswordVersion();
+  }, 10000);
 
 })();
