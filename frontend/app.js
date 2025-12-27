@@ -1,7 +1,7 @@
 // Frontend App - Chỉ UI logic, gọi API backend
 (() => {
   // API Configuration
-  const API_URL = 'https://toolbcrvip.vercel.app';
+  const API_URL = 'https://toolbcrvip.vercel.app/api/analyze';
   const API_KEY = 'duchuy208'; // Lưu trong e''nv variable
 
   // Storage keys
