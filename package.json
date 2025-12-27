@@ -1,0 +1,24 @@
+{
+  "name": "meta-bot-pro",
+  "version": "9.0.0",
+  "description": "Meta Bot Pro V9.0 - Advanced AI Baccarat Prediction System",
+  "main": "public/index.html",
+  "scripts": {
+    "dev": "npx http-server public -p 3000",
+    "build": "echo 'Build complete'",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "baccarat",
+    "prediction",
+    "ai",
+    "machine-learning",
+    "gambling"
+  ],
+  "author": "Meta Bot Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/meta-bot-pro.git"
+  }
+}
