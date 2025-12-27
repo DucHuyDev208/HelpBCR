@@ -1,8 +1,8 @@
 // Frontend App - Chỉ UI logic, gọi API backend
 (() => {
   // API Configuration
-  const API_URL = 'https://your-backend.vercel.app/api/analyze';
-  const API_KEY = 'your-api-key-here'; // Lưu trong env variable
+  const API_URL = 'https://toolbcrvip.vercel.app/api/analyze';
+  const API_KEY = '24446666688888888'; // Lưu trong env variable
 
   // Storage keys
   const STORAGE_HISTORY = 'meta_baccarat_history_v9';
