@@ -590,3 +590,15 @@ window.MetaBotCore = (function() {
     getMethodMemory: (id) => { ensureMemory(id); return methodMemory[id]; },
     calculateKelly: (chosen) => {
       if (!chosen) return 0;
+      const winRate = stats.total > 0 ? stats.correct / stats.total : 0.5;
+      const p = winRate;
+      const q = 1 - p;
+      const kelly = (p - q);
+      const adjustedKelly = kelly * chosen.conf;
+      return Math.max(0, Math.min(0.25, adjustedKelly));
+    },
+    calculateAIScore,
+    generateInsights
+  };
+
+})();
