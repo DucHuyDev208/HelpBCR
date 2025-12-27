@@ -2,7 +2,7 @@
 (function() {
   'use strict';
 
-  const VALID_PASSWORD = 'metabot2024';
+  const VALID_PASSWORD = 'toolbcrv9';
   const SESSION_KEY = 'metabot_session';
   const SESSION_DURATION = 24 * 60 * 60 * 1000;
 
