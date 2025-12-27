@@ -2,7 +2,7 @@
 (() => {
   // API Configuration
   const API_URL = 'https://toolbcrvip.vercel.app/api/analyze';
-  const API_KEY = '24446666688888888'; // Lưu trong env variable
+  const API_KEY = 'duchuy208'; // Lưu trong e''nv variable
 
   // Storage keys
   const STORAGE_HISTORY = 'meta_baccarat_history_v9';
