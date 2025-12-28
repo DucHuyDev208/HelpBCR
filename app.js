@@ -1,139 +1,311 @@
-// META BOT PRO - Authentication System
+// META BOT PRO - Application Layer (CLEAN VERSION - FIX FREEZE)
 (function() {
   'use strict';
 
-  const VALID_PASSWORD = 'metabot2024'; // ĐỔI MẬT KHẨU TẠI ĐÂY
-  const PASSWORD_VERSION = 'v1'; // TĂNG LÊN KHI ĐỔI PASS (v1, v2, v3...)
-  
-  const SESSION_KEY = 'metabot_session';
-  const SESSION_DURATION = 24 * 60 * 60 * 1000;
+  // DOM Elements
+  const elements = {
+    predText: document.getElementById('predText'),
+    confidenceFill: document.getElementById('confidenceFill'),
+    confidenceText: document.getElementById('confidenceText'),
+    signalStrength: document.getElementById('signalStrength'),
+    kellyIndicator: document.getElementById('kellyIndicator'),
+    historyEl: document.getElementById('history'),
+    phaseIcon: document.getElementById('phaseIcon'),
+    phaseText: document.getElementById('phaseText'),
+    methodGrid: document.getElementById('methodGrid'),
+    methodBox: document.getElementById('methodBox'),
+    toggleBtn: document.getElementById('toggleBtn'),
+    aiInsights: document.getElementById('aiInsights'),
+    statTotal: document.getElementById('statTotal'),
+    statAccuracy: document.getElementById('statAccuracy'),
+    statStreak: document.getElementById('statStreak'),
+    statSequence: document.getElementById('statSequence'),
+    statBankerPct: document.getElementById('statBankerPct'),
+    statPlayerPct: document.getElementById('statPlayerPct'),
+    statAiScore: document.getElementById('statAiScore'),
+    btnBanker: document.getElementById('btnBanker'),
+    btnPlayer: document.getElementById('btnPlayer'),
+    btnUndo: document.getElementById('btnUndo'),
+    btnReset: document.getElementById('btnReset')
+  };
 
-  const authOverlay = document.getElementById('authOverlay');
-  const appContent = document.getElementById('appContent');
-  const passwordInput = document.getElementById('passwordInput');
-  const loginBtn = document.getElementById('loginBtn');
-  const authError = document.getElementById('authError');
+  let collapsed = false;
+  let core = null;
 
-  function checkSession() {
-    try {
-      const session = localStorage.getItem(SESSION_KEY);
-      if (session) {
-        const data = JSON.parse(session);
-        const now = Date.now();
-        
-        // Kiểm tra password version
-        if (data.passwordVersion !== PASSWORD_VERSION) {
-          console.log('Password đã thay đổi - yêu cầu đăng nhập lại');
-          localStorage.removeItem(SESSION_KEY);
-          return false;
-        }
-        
-        // Kiểm tra session còn hạn không
-        if (now - data.timestamp < SESSION_DURATION) {
-          unlockApp();
-          return true;
-        } else {
-          localStorage.removeItem(SESSION_KEY);
-        }
-      }
-    } catch (e) {
-      console.error('Session check error:', e);
-      localStorage.removeItem(SESSION_KEY);
-    }
-    return false;
-  }
-
-  function createSession() {
-    try {
-      const session = {
-        timestamp: Date.now(),
-        version: '9.0',
-        passwordVersion: PASSWORD_VERSION
-      };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    } catch (e) {
-      console.error('Session creation error:', e);
-    }
-  }
-
-  function unlockApp() {
-    authOverlay.style.display = 'none';
-    appContent.classList.add('unlocked');
-    window.dispatchEvent(new CustomEvent('metabot:unlocked'));
-  }
-
-  function verifyPassword(input) {
-    return input === VALID_PASSWORD;
-  }
-
-  function handleLogin() {
-    const input = passwordInput.value.trim();
-    
-    if (!input) {
-      showError('Vui lòng nhập mật khẩu');
+  // Khởi tạo app
+  function initApp() {
+    if (!window.MetaBotCore) {
+      setTimeout(initApp, 100);
       return;
     }
 
-    if (verifyPassword(input)) {
-      createSession();
-      unlockApp();
-      passwordInput.value = '';
-      authError.classList.remove('show');
-    } else {
-      showError('Mật khẩu không đúng!');
-      passwordInput.value = '';
-      passwordInput.focus();
-    }
-  }
-
-  function showError(message) {
-    authError.textContent = `❌ ${message}`;
-    authError.classList.add('show');
+    core = window.MetaBotCore;
+    setupEventListeners();
+    setupWakeUpDetection();
+    render();
     
-    setTimeout(() => {
-      authError.classList.remove('show');
-    }, 3000);
+    console.log('🚀 Meta Bot Pro V9.0 - Ready!');
   }
 
-  loginBtn.addEventListener('click', handleLogin);
-  
-  passwordInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      handleLogin();
-    }
-  });
+  // Setup event listeners
+  function setupEventListeners() {
+    elements.btnBanker.addEventListener('click', () => {
+      core.addResult('B');
+      render();
+    });
 
-  if (!checkSession()) {
-    passwordInput.focus();
-  }
+    elements.btnPlayer.addEventListener('click', () => {
+      core.addResult('P');
+      render();
+    });
 
-  window.MetaBotAuth = {
-    logout: function() {
-      localStorage.removeItem(SESSION_KEY);
-      window.location.reload();
-    },
-    checkPasswordVersion: function() {
-      const session = localStorage.getItem(SESSION_KEY);
-      if (session) {
-        try {
-          const data = JSON.parse(session);
-          if (data.passwordVersion !== PASSWORD_VERSION) {
-            console.log('🔒 Mật khẩu đã thay đổi - Đăng xuất...');
-            localStorage.removeItem(SESSION_KEY);
-            window.location.reload();
-          }
-        } catch (e) {
-          console.error('Check version error:', e);
-        }
+    elements.btnUndo.addEventListener('click', () => {
+      core.undo();
+      render();
+    });
+
+    elements.btnReset.addEventListener('click', () => {
+      if (confirm('Xóa toàn bộ lịch sử và bắt đầu mới?')) {
+        core.reset();
+        render();
       }
+    });
+
+    elements.toggleBtn.addEventListener('click', () => {
+      collapsed = !collapsed;
+      elements.methodBox.classList.toggle('collapsed', collapsed);
+      elements.toggleBtn.textContent = collapsed ? 'Mở rộng ▼' : 'Thu gọn ▲';
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keypress', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      
+      const key = e.key.toLowerCase();
+      if (key === 'b') { core.addResult('B'); render(); }
+      else if (key === 'p') { core.addResult('P'); render(); }
+      else if (key === 'u') { core.undo(); render(); }
+      else if (key === 'r') { core.reset(); render(); }
+    });
+  }
+
+  // Setup wake-up detection (FIX ĐƠ)
+  function setupWakeUpDetection() {
+    let lastInteraction = Date.now();
+    
+    // Phát hiện khi user tương tác sau khi để lâu
+    const handleInteraction = () => {
+      const now = Date.now();
+      const timeSinceLastInteraction = now - lastInteraction;
+      
+      // Nếu không tương tác > 2 phút, có thể đã sleep
+      if (timeSinceLastInteraction > 2 * 60 * 1000) {
+        console.log('🔄 Wake up detected - Refreshing display...');
+        render(); // Refresh lại display
+      }
+      
+      lastInteraction = now;
+    };
+
+    // Listen các event
+    ['click', 'touchstart', 'mousemove', 'keydown'].forEach(event => {
+      document.addEventListener(event, handleInteraction, { passive: true });
+    });
+
+    // Phát hiện khi tab được focus lại
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        console.log('🔄 Tab visible - Refreshing display...');
+        setTimeout(render, 100); // Delay nhỏ để đảm bảo DOM ready
+      }
+    });
+
+    // Phát hiện khi window được focus
+    window.addEventListener('focus', () => {
+      console.log('🔄 Window focused - Refreshing display...');
+      setTimeout(render, 100);
+    });
+  }
+
+  // Render functions
+  function renderHistory() {
+    const history = core.getHistory();
+    elements.historyEl.innerHTML = '';
+    
+    history.forEach((r, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'chip ' + (r === 'B' ? 'banker' : 'player');
+      chip.textContent = r;
+      chip.title = `#${i + 1} — ${r}`;
+      elements.historyEl.appendChild(chip);
+    });
+    
+    elements.historyEl.scrollTop = elements.historyEl.scrollHeight;
+  }
+
+  function renderStats() {
+    const stats = core.getStats();
+    const history = core.getHistory();
+    
+    elements.statTotal.textContent = history.length;
+    elements.statAccuracy.textContent = stats.total > 0 
+      ? `${((stats.correct / stats.total) * 100).toFixed(1)}%` 
+      : '--%';
+    elements.statStreak.textContent = stats.currentStreak;
+    elements.statAiScore.textContent = core.calculateAIScore();
+    
+    if (history.length > 0) {
+      const last = history[history.length - 1];
+      let seq = 1;
+      for (let i = history.length - 2; i >= 0; i--) {
+        if (history[i] === last) seq++;
+        else break;
+      }
+      elements.statSequence.textContent = `${last}×${seq}`;
+      
+      const bCount = history.filter(x => x === 'B').length;
+      const pCount = history.filter(x => x === 'P').length;
+      const total = history.length;
+      elements.statBankerPct.textContent = `${((bCount / total) * 100).toFixed(1)}%`;
+      elements.statPlayerPct.textContent = `${((pCount / total) * 100).toFixed(1)}%`;
+    } else {
+      elements.statSequence.textContent = '--';
+      elements.statBankerPct.textContent = '--%';
+      elements.statPlayerPct.textContent = '--%';
     }
-  };
+  }
 
-  // Tự động kiểm tra password version mỗi 10 giây
-  setInterval(() => {
-    window.MetaBotAuth.checkPasswordVersion();
-  }, 10000);
+  function renderSignalStrength(conf) {
+    elements.signalStrength.innerHTML = '';
+    const bars = 5;
+    const activeCount = Math.ceil((conf || 0) * bars);
+    
+    for (let i = 0; i < bars; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'signal-bar';
+      if (i < activeCount) bar.classList.add('active');
+      elements.signalStrength.appendChild(bar);
+    }
+  }
 
-  console.log('🔐 Auth system ready');
+  function renderKellyIndicator(chosen) {
+    if (!chosen || core.getStats().total === 0) {
+      elements.kellyIndicator.textContent = '';
+      return;
+    }
+    
+    const kelly = core.calculateKelly(chosen);
+    
+    if (kelly > 0) {
+      elements.kellyIndicator.textContent = `💰 Kelly: ${(kelly * 100).toFixed(1)}% bankroll`;
+    } else {
+      elements.kellyIndicator.textContent = '⚠️ Không nên đặt cược';
+    }
+  }
+
+  function renderPrediction(result) {
+    if (!result || !result.chosen) {
+      elements.predText.textContent = 'Đang phân tích...';
+      elements.predText.className = 'pred-value waiting';
+      elements.confidenceFill.style.width = '0%';
+      elements.confidenceText.textContent = 'Cần thêm dữ liệu';
+      renderSignalStrength(0);
+      elements.kellyIndicator.textContent = '';
+      return;
+    }
+
+    const chosen = result.chosen;
+    elements.predText.textContent = chosen.pred === 'B' ? 'BANKER 🔴' : 'PLAYER 🔵';
+    elements.predText.className = 'pred-value ' + (chosen.pred === 'B' ? 'blink-red' : 'blink-blue');
+    
+    const confPercent = chosen.conf * 100;
+    elements.confidenceFill.style.width = confPercent + '%';
+    elements.confidenceText.textContent = `Độ tin cậy: ${confPercent.toFixed(1)}% | ${chosen.method.toUpperCase()}`;
+    
+    renderSignalStrength(chosen.conf);
+    renderKellyIndicator(chosen);
+  }
+
+  function renderPhase(phase) {
+    elements.phaseIcon.textContent = phase.icon;
+    elements.phaseText.textContent = phase.label;
+    elements.phaseText.className = 'phase-text ' + phase.class;
+  }
+
+  function renderMethods(result) {
+    const methods = core.getMethods();
+    const all = result.all || [];
+    const chosen = result.chosen;
+    
+    elements.methodGrid.innerHTML = '';
+    
+    methods.forEach(m => {
+      const methodResult = all.find(r => r.method === m.id);
+      const card = document.createElement('div');
+      card.className = 'method-card ' + m.colorClass;
+      if (chosen && chosen.method === m.id) card.classList.add('active');
+      
+      const name = document.createElement('div');
+      name.className = 'method-name';
+      name.textContent = m.label;
+      
+      const conf = document.createElement('div');
+      conf.className = 'method-conf';
+      conf.textContent = methodResult ? `${(methodResult.conf * 100).toFixed(0)}%` : '--';
+      
+      card.appendChild(name);
+      card.appendChild(conf);
+      
+      if (methodResult) {
+        const pred = document.createElement('div');
+        pred.className = 'method-pred';
+        pred.style.background = methodResult.pred === 'B' 
+          ? 'linear-gradient(135deg,#ff2d55,#ff6b9d)' 
+          : 'linear-gradient(135deg,#0a84ff,#5ac8fa)';
+        card.appendChild(pred);
+      }
+      
+      const memory = core.getMethodMemory(m.id);
+      const winRate = memory.attempts > 0 
+        ? ((memory.wins / memory.attempts) * 100).toFixed(0) 
+        : '0';
+      const winRateEl = document.createElement('div');
+      winRateEl.className = 'method-winrate';
+      winRateEl.textContent = `${winRate}% (${memory.attempts})`;
+      card.appendChild(winRateEl);
+      
+      elements.methodGrid.appendChild(card);
+    });
+  }
+
+  function renderAIInsights(result) {
+    if (!result.chosen || core.getHistory().length === 0) {
+      elements.aiInsights.textContent = 'Đang chờ dữ liệu để phân tích...';
+      return;
+    }
+    
+    const insights = core.generateInsights(result);
+    elements.aiInsights.textContent = insights.join(' • ');
+  }
+
+  // Main render function
+  function render() {
+    try {
+      renderHistory();
+      renderStats();
+      
+      const result = core.analyze();
+      
+      renderPrediction(result);
+      renderPhase(result.phase);
+      renderMethods(result);
+      renderAIInsights(result);
+    } catch (e) {
+      console.error('Render error:', e);
+    }
+  }
+
+  // Start when unlocked
+  window.addEventListener('metabot:unlocked', initApp);
 
 })();
