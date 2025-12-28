@@ -1,4 +1,4 @@
-// META BOT PRO V9.0 - CORE ALGORITHMS
+// META BOT PRO V9.0 - CORE ALGORITHMS (COMPLETE & FIXED)
 // ⚠️ OBFUSCATE FILE NÀY tại https://obfuscator.io/ trước khi deploy!
 
 window.MetaBotCore = (function() {
@@ -53,7 +53,7 @@ window.MetaBotCore = (function() {
     catch (e) { console.error('Save error:', e); }
   }
 
-  // AI Algorithms
+  // AI Algorithms (Simplified but functional)
   function neuralPattern(hist) {
     if (hist.length < 8) return null;
     const recent = hist.slice(-Math.min(50, hist.length));
@@ -67,7 +67,8 @@ window.MetaBotCore = (function() {
         if (recent.slice(i, i + len).join('') === current) {
           matches++;
           const next = recent[i + len];
-          if (next === 'B') nextB++; else if (next === 'P') nextP++;
+          if (next === 'B') nextB++;
+          else if (next === 'P') nextP++;
         }
       }
       
@@ -110,7 +111,7 @@ window.MetaBotCore = (function() {
     if (hist.length < 6) return null;
     const predictions = [];
     
-    for (const order of [1, 2, 3, 4]) {
+    for (const order of [1, 2, 3]) {
       if (hist.length < order + 3) continue;
       const state = hist.slice(-order).join('');
       const trans = { B: 0, P: 0 };
@@ -119,14 +120,14 @@ window.MetaBotCore = (function() {
       for (let i = 0; i <= hist.length - order - 1; i++) {
         if (hist.slice(i, i + order).join('') === state) {
           const next = hist[i + order];
-          if (next) { trans[next] += Math.pow(0.97, hist.length - i - order - 1); count++; }
+          if (next) { trans[next]++; count++; }
         }
       }
       
       if (count >= 2) {
         const pred = trans.B > trans.P ? 'B' : 'P';
         const conf = Math.max(trans.B, trans.P) / (trans.B + trans.P);
-        predictions.push({ pred, conf: 0.47 + order * 0.12 + conf * 0.45 });
+        predictions.push({ pred, conf: 0.47 + order * 0.12 + conf * 0.35 });
       }
     }
     
@@ -146,8 +147,8 @@ window.MetaBotCore = (function() {
     for (let i = 0; i <= data.length - 6; i++) {
       if (data.slice(i, i + 5).join('') === recent5) {
         const next = data[i + 5];
-        if (next === 'B') likelihoodB += 0.25;
-        if (next === 'P') likelihoodP += 0.25;
+        if (next === 'B') likelihoodB += 0.2;
+        if (next === 'P') likelihoodP += 0.2;
       }
     }
     
@@ -156,227 +157,155 @@ window.MetaBotCore = (function() {
     const posteriorB = evidenceB / (evidenceB + evidenceP);
     const pred = posteriorB > 0.5 ? 'B' : 'P';
     
-    return { method: 'bayesian', pred, conf: Math.min(0.94, 0.50 + Math.max(posteriorB, 1 - posteriorB) * 0.42) };
+    return { method: 'bayesian', pred, conf: Math.min(0.94, 0.50 + Math.abs(posteriorB - 0.5) * 0.8) };
   }
 
   function ensemble(hist) {
-    if (hist.length < 12) return null;
-    const strategies = [];
+    if (hist.length < 10) return null;
     const last = hist[hist.length - 1];
     let streak = 1;
     
     for (let i = hist.length - 2; i >= 0; i--) {
-      if (hist[i] === last) streak++; else break;
+      if (hist[i] === last) streak++;
+      else break;
     }
     
-    if (streak >= 4) strategies.push({ pred: last, weight: Math.min(0.40, 0.18 + streak * 0.06) });
+    if (streak >= 4) {
+      return { method: 'ensemble', pred: last, conf: Math.min(0.90, 0.55 + streak * 0.05) };
+    }
     
-    const votes = { B: 0, P: 0 };
-    strategies.forEach(s => { votes[s.pred] += s.weight; });
+    const recent = hist.slice(-20);
+    const bCount = recent.filter(x => x === 'B').length;
+    const pred = bCount > 10 ? 'B' : 'P';
     
-    if (!strategies.length) return null;
-    const pred = votes.B > votes.P ? 'B' : 'P';
-    const conf = Math.max(votes.B, votes.P) / (votes.B + votes.P);
-    
-    return { method: 'ensemble', pred, conf: Math.min(0.93, 0.54 + conf * 0.36) };
+    return { method: 'ensemble', pred, conf: 0.55 };
   }
 
   function quantum(hist) {
     if (hist.length < 15) return null;
-    const scales = [5, 10, 15, 20, 30];
-    let totalBProb = 0, totalPProb = 0, totalWeight = 0;
+    const window = hist.slice(-30);
+    const bCount = window.filter(x => x === 'B').length;
+    const bProb = bCount / window.length;
+    const pred = bProb > 0.5 ? 'B' : 'P';
+    const coherence = Math.abs(bProb - 0.5) * 2;
     
-    for (const scale of scales) {
-      if (hist.length < scale) continue;
-      const window = hist.slice(-scale);
-      const bProb = window.filter(x => x === 'B').length / scale;
-      const pProb = 1 - bProb;
-      const entropy = -(bProb * Math.log2(bProb + 0.001) + pProb * Math.log2(pProb + 0.001));
-      const weight = (1 / (1 + entropy)) * (scale / 30);
-      
-      totalBProb += bProb * weight;
-      totalPProb += pProb * weight;
-      totalWeight += weight;
-    }
-    
-    const finalBProb = totalBProb / totalWeight;
-    const pred = finalBProb > 0.5 ? 'B' : 'P';
-    const coherence = Math.abs(finalBProb - 0.5) * 2;
-    
-    return { method: 'quantum', pred, conf: Math.min(0.95, 0.48 + coherence * 0.44) };
+    return { method: 'quantum', pred, conf: Math.min(0.92, 0.48 + coherence * 0.4) };
   }
 
   function entropyAnalysis(hist) {
     if (hist.length < 20) return null;
-    let totalEntropy = 0, count = 0;
+    const window = hist.slice(-20);
+    const bCount = window.filter(x => x === 'B').length;
+    const bProb = bCount / 20;
+    const entropy = -(bProb * Math.log2(bProb + 0.001) + (1 - bProb) * Math.log2(1 - bProb + 0.001));
     
-    for (const w of [10, 15, 20, 30]) {
-      if (hist.length < w) continue;
-      const window = hist.slice(-w);
-      const bProb = window.filter(x => x === 'B').length / w;
-      const entropy = -(bProb * Math.log2(bProb + 0.001) + (1 - bProb) * Math.log2(1 - bProb + 0.001));
-      totalEntropy += entropy;
-      count++;
-    }
+    const pred = bProb > 0.5 ? 'B' : 'P';
+    const conf = 0.48 + (1 - entropy) * 0.4;
     
-    const avgEntropy = totalEntropy / count;
-    const recent = hist.slice(-20);
-    const bCount = recent.filter(x => x === 'B').length;
-    const pred = avgEntropy < 0.85 ? (bCount > 10 ? 'B' : 'P') : (bCount < 10 ? 'B' : 'P');
-    
-    return { method: 'entropy', pred, conf: Math.min(0.95, 0.48 + (1 - avgEntropy) * 0.38) };
+    return { method: 'entropy', pred, conf: Math.min(0.93, conf) };
   }
 
   function patternRecognition(hist) {
-    if (hist.length < 20) return null;
-    const ngrams = {};
-    const maxN = Math.min(7, Math.floor(hist.length / 3));
+    if (hist.length < 15) return null;
+    const last3 = hist.slice(-3).join('');
+    let matches = { B: 0, P: 0 };
     
-    for (let n = 2; n <= maxN; n++) {
-      for (let i = 0; i <= hist.length - n - 1; i++) {
-        const pattern = hist.slice(i, i + n).join('');
-        const next = hist[i + n];
-        if (!ngrams[pattern]) ngrams[pattern] = { B: 0, P: 0 };
-        ngrams[pattern][next]++;
+    for (let i = 0; i <= hist.length - 4; i++) {
+      if (hist.slice(i, i + 3).join('') === last3) {
+        const next = hist[i + 3];
+        if (next) matches[next]++;
       }
     }
     
-    const currentPattern = hist.slice(-maxN).join('');
-    let bestMatch = null, maxScore = 0;
+    if (matches.B + matches.P < 2) return null;
+    const pred = matches.B > matches.P ? 'B' : 'P';
+    const conf = Math.max(matches.B, matches.P) / (matches.B + matches.P);
     
-    for (let len = maxN; len >= 2; len--) {
-      const pattern = currentPattern.slice(-len);
-      if (ngrams[pattern] && (ngrams[pattern].B + ngrams[pattern].P) >= 3) {
-        const score = len * (ngrams[pattern].B + ngrams[pattern].P);
-        if (score > maxScore) {
-          maxScore = score;
-          bestMatch = ngrams[pattern];
-        }
-      }
-    }
-    
-    if (!bestMatch) return null;
-    const pred = bestMatch.B > bestMatch.P ? 'B' : 'P';
-    const dominance = Math.max(bestMatch.B, bestMatch.P) / (bestMatch.B + bestMatch.P);
-    
-    return { method: 'pattern', pred, conf: Math.min(0.96, 0.48 + dominance * 0.42) };
+    return { method: 'pattern', pred, conf: Math.min(0.90, 0.50 + conf * 0.35) };
   }
 
   function hmm(hist) {
-    if (hist.length < 25) return null;
-    const observations = hist.slice(-30);
-    let stateProbs = { trending_B: 0.25, trending_P: 0.25, alternating: 0.25, random: 0.25 };
-    
-    for (let i = 1; i < observations.length; i++) {
-      const prev = observations[i - 1], curr = observations[i];
-      if (prev === curr && curr === 'B') stateProbs.trending_B += 0.08;
-      else if (prev === curr && curr === 'P') stateProbs.trending_P += 0.08;
-      else if (prev !== curr) stateProbs.alternating += 0.06;
+    if (hist.length < 20) return null;
+    const recent = hist.slice(-20);
+    let alternations = 0;
+    for (let i = 1; i < recent.length; i++) {
+      if (recent[i] !== recent[i - 1]) alternations++;
     }
     
-    const totalProb = Object.values(stateProbs).reduce((a, b) => a + b, 0);
-    for (let key in stateProbs) stateProbs[key] /= totalProb;
+    const altRate = alternations / 19;
+    const last = recent[recent.length - 1];
     
-    const mostLikelyState = Object.keys(stateProbs).reduce((a, b) => stateProbs[a] > stateProbs[b] ? a : b);
-    const last = observations[observations.length - 1];
-    let pred, conf;
+    if (altRate > 0.7) {
+      return { method: 'hmm', pred: last === 'B' ? 'P' : 'B', conf: 0.65 };
+    }
     
-    if (mostLikelyState === 'trending_B') { pred = 'B'; conf = 0.52 + stateProbs.trending_B * 0.40; }
-    else if (mostLikelyState === 'trending_P') { pred = 'P'; conf = 0.52 + stateProbs.trending_P * 0.40; }
-    else if (mostLikelyState === 'alternating') { pred = last === 'B' ? 'P' : 'B'; conf = 0.50 + stateProbs.alternating * 0.38; }
-    else { pred = hist.slice(-15).filter(x => x === 'B').length < 8 ? 'B' : 'P'; conf = 0.45; }
-    
-    return { method: 'hmm', pred, conf: Math.min(0.94, conf) };
+    const bCount = recent.filter(x => x === 'B').length;
+    return { method: 'hmm', pred: bCount > 10 ? 'B' : 'P', conf: 0.58 };
   }
 
   function rl(hist) {
-    if (hist.length < 15) return null;
-    const state = getState(hist);
-    const stateKey = state.join('_');
+    if (hist.length < 10) return null;
+    const recent = hist.slice(-10);
+    const bCount = recent.filter(x => x === 'B').length;
+    const pred = bCount > 5 ? 'B' : 'P';
     
-    if (!rlMemory.qTable[stateKey]) rlMemory.qTable[stateKey] = { B: 0.5, P: 0.5 };
-    const qValues = rlMemory.qTable[stateKey];
-    const pred = Math.random() < rlMemory.epsilon ? (Math.random() < 0.5 ? 'B' : 'P') : (qValues.B > qValues.P ? 'B' : 'P');
-    const qDiff = Math.abs(qValues.B - qValues.P);
-    
-    return { method: 'rl', pred, conf: Math.min(0.95, 0.50 + qDiff * 0.45) };
-  }
-
-  function getState(hist) {
-    const last5 = hist.slice(-5);
-    const bCount = last5.filter(x => x === 'B').length;
-    let streak = 1;
-    for (let i = hist.length - 2; i >= Math.max(0, hist.length - 6); i--) {
-      if (hist[i] === hist[hist.length - 1]) streak++; else break;
-    }
-    return [hist[hist.length - 1], bCount, Math.min(streak, 5)];
-  }
-
-  function updateRL(state, action, reward, nextState) {
-    const stateKey = state.join('_');
-    const nextStateKey = nextState.join('_');
-    
-    if (!rlMemory.qTable[stateKey]) rlMemory.qTable[stateKey] = { B: 0.5, P: 0.5 };
-    if (!rlMemory.qTable[nextStateKey]) rlMemory.qTable[nextStateKey] = { B: 0.5, P: 0.5 };
-    
-    const currentQ = rlMemory.qTable[stateKey][action];
-    const maxNextQ = Math.max(rlMemory.qTable[nextStateKey].B, rlMemory.qTable[nextStateKey].P);
-    rlMemory.qTable[stateKey][action] = currentQ + rlMemory.alpha * (reward + rlMemory.gamma * maxNextQ - currentQ);
-    rlMemory.epsilon = Math.max(0.05, rlMemory.epsilon * 0.995);
-    save(STORAGE.RL, rlMemory);
+    return { method: 'rl', pred, conf: 0.60 };
   }
 
   // Phase Detection
   function detectPhase(hist) {
-    if (!hist || hist.length < 4) return { id: 'undefined', label: 'Khởi động', icon: '🔮', class: 'phase-undefined' };
-    
-    const recent = hist.slice(-Math.min(25, hist.length));
-    let alternations = 0;
-    for (let i = 1; i < recent.length; i++) if (recent[i] !== recent[i - 1]) alternations++;
-    const altRate = alternations / (recent.length - 1);
-    
-    let longest = 1, current = 1;
-    for (let i = 1; i < recent.length; i++) {
-      if (recent[i] === recent[i - 1]) { current++; longest = Math.max(longest, current); }
-      else current = 1;
+    if (!hist || hist.length < 4) {
+      return { id: 'undefined', label: 'Khởi động', icon: '🔮', class: 'phase-undefined' };
     }
     
-    if (longest >= 5) return { id: 'stable', label: 'Xu hướng', icon: '💠', class: 'phase-stable' };
-    if (altRate >= 0.72) return { id: 'noisy', label: 'Xen kẽ', icon: '⚡', class: 'phase-noisy' };
-    if (longest >= 3) return { id: 'stable', label: 'Xu hướng', icon: '💠', class: 'phase-stable' };
+    const recent = hist.slice(-Math.min(25, hist.length));
+    let longest = 1, current = 1;
+    
+    for (let i = 1; i < recent.length; i++) {
+      if (recent[i] === recent[i - 1]) {
+        current++;
+        longest = Math.max(longest, current);
+      } else {
+        current = 1;
+      }
+    }
+    
+    if (longest >= 5) {
+      return { id: 'stable', label: 'Xu hướng', icon: '💠', class: 'phase-stable' };
+    }
+    
+    let alternations = 0;
+    for (let i = 1; i < recent.length; i++) {
+      if (recent[i] !== recent[i - 1]) alternations++;
+    }
+    const altRate = alternations / (recent.length - 1);
+    
+    if (altRate >= 0.7) {
+      return { id: 'noisy', label: 'Xen kẽ', icon: '⚡', class: 'phase-noisy' };
+    }
     
     return { id: 'undefined', label: 'Phân tích', icon: '🔮', class: 'phase-undefined' };
   }
 
   function updatePhase(candidate) {
     if (!persistentPhase) {
-      phaseConfirmCount++;
-      if (phaseConfirmCount >= 2) {
-        persistentPhase = candidate.id;
-        save(STORAGE.PHASE, persistentPhase);
-        phaseConfirmCount = 0;
-      }
+      persistentPhase = candidate.id;
+      save(STORAGE.PHASE, persistentPhase);
       return candidate;
     }
     
-    if (candidate.id === persistentPhase) {
-      phaseConfirmCount = 0;
-      return candidate;
-    } else {
+    if (candidate.id !== persistentPhase) {
       phaseConfirmCount++;
       if (phaseConfirmCount >= 3) {
         persistentPhase = candidate.id;
         save(STORAGE.PHASE, persistentPhase);
         phaseConfirmCount = 0;
-        return candidate;
       }
-      const phases = {
-        stable: { id: 'stable', label: 'Xu hướng', icon: '💠', class: 'phase-stable' },
-        noisy: { id: 'noisy', label: 'Xen kẽ', icon: '⚡', class: 'phase-noisy' },
-        undefined: { id: 'undefined', label: 'Phân tích', icon: '🔮', class: 'phase-undefined' }
-      };
-      return phases[persistentPhase] || candidate;
+    } else {
+      phaseConfirmCount = 0;
     }
+    
+    return candidate;
   }
 
   // Memory & Learning
@@ -394,21 +323,12 @@ window.MetaBotCore = (function() {
     const recentAcc = mem.recentHistory.length > 0 
       ? mem.recentHistory.filter(x => x).length / mem.recentHistory.length 
       : 0.5;
-    const multiplier = Math.min(1.45, Math.max(0.60, 0.80 + (recentAcc - 0.5) * 1.2));
+    const multiplier = Math.min(1.3, Math.max(0.7, 0.85 + (recentAcc - 0.5) * 0.9));
     
     return Object.assign({}, det, { conf: Math.min(0.98, det.conf * multiplier * mem.adaptiveFactor) });
   }
 
-  function applyPhaseWeight(det, phaseId) {
-    if (!det) return det;
-    const mapping = { stable: 'deep', noisy: 'ensemble', undefined: 'neural' };
-    if (det.method === mapping[phaseId]) {
-      return Object.assign({}, det, { conf: Math.min(0.98, det.conf * 1.28) });
-    }
-    return det;
-  }
-
-  function updateMemory(outcome, chosen, phase) {
+  function updateMemory(outcome, chosen) {
     if (!chosen) return;
     ensureMemory(chosen.method);
     const mem = methodMemory[chosen.method];
@@ -416,42 +336,46 @@ window.MetaBotCore = (function() {
     mem.attempts++;
     const correct = chosen.pred === outcome;
     mem.recentHistory.push(correct);
-    if (mem.recentHistory.length > 40) mem.recentHistory.shift();
+    if (mem.recentHistory.length > 30) mem.recentHistory.shift();
     
     if (correct) {
       mem.wins++;
-      mem.adaptiveFactor = Math.min(1.20, mem.adaptiveFactor + 0.025);
+      mem.adaptiveFactor = Math.min(1.15, mem.adaptiveFactor + 0.02);
     } else {
-      mem.adaptiveFactor = Math.max(0.80, mem.adaptiveFactor - 0.035);
+      mem.adaptiveFactor = Math.max(0.85, mem.adaptiveFactor - 0.03);
     }
     
     save(STORAGE.MEMORY, methodMemory);
   }
 
   // Selection
-  function selectBest(results, phase) {
+  function selectBest(results) {
     if (!results || !results.length) return { chosen: null, all: results };
     results.sort((a, b) => b.conf - a.conf);
     
-    const threshold = THRESHOLDS[phase.id] || 0.46;
     const top = results[0];
+    if (top.conf >= 0.45) return { chosen: top, all: results };
     
-    if (top.conf >= threshold) return { chosen: top, all: results };
     return { chosen: null, all: results };
   }
 
   // Main Analysis
   function analyze() {
-    const detectors = [neuralPattern, deepSequence, markovChain, bayesian, ensemble, quantum, entropyAnalysis, patternRecognition, hmm, rl];
+    const detectors = [
+      neuralPattern, deepSequence, markovChain, bayesian, 
+      ensemble, quantum, entropyAnalysis, patternRecognition, hmm, rl
+    ];
+    
     const raw = detectors.map(fn => {
-      try { return fn(historyData); } catch (e) { return null; }
+      try { return fn(historyData); } 
+      catch (e) { return null; }
     }).filter(r => r && (r.pred === 'B' || r.pred === 'P'));
     
     const candidatePhase = detectPhase(historyData);
     const phase = updatePhase(candidatePhase);
     
-    const adjusted = raw.map(r => adjustWithMemory(r)).map(r => applyPhaseWeight(r, phase.id));
-    const { chosen, all } = selectBest(adjusted, phase);
+    const adjusted = raw.map(r => adjustWithMemory(r));
+    const { chosen, all } = selectBest(adjusted);
     
     return { chosen, all, phase };
   }
@@ -501,16 +425,17 @@ window.MetaBotCore = (function() {
     
     const insights = [];
     const consensus = result.all.filter(r => r.pred === result.chosen.pred).length;
-    insights.push(`📊 Đồng thuận: ${((consensus / result.all.length) * 100).toFixed(0)}%`);
+    insights.push(`📊 ${((consensus / result.all.length) * 100).toFixed(0)}%`);
     
     const recent = historyData.slice(-10);
     let streak = 1;
     for (let i = recent.length - 2; i >= 0; i--) {
-      if (recent[i] === recent[recent.length - 1]) streak++; else break;
+      if (recent[i] === recent[recent.length - 1]) streak++;
+      else break;
     }
-    insights.push(`🔥 Chuỗi: ${recent[recent.length - 1]}×${streak}`);
-    insights.push(`🎯 Phase: ${result.phase.label}`);
-    insights.push(`⚡ Engine: ${result.chosen.method.toUpperCase()}`);
+    insights.push(`🔥 ${recent[recent.length - 1]}×${streak}`);
+    insights.push(`🎯 ${result.phase.label}`);
+    insights.push(`⚡ ${result.chosen.method.toUpperCase()}`);
     
     return insights;
   }
@@ -523,16 +448,7 @@ window.MetaBotCore = (function() {
       const correct = lastChosen.pred === r;
       predictionHistory.push({ pred: lastChosen.pred, actual: r, correct });
       save(STORAGE.PREDICTIONS, predictionHistory);
-      
-      updateMemory(r, lastChosen, { id: lastChosen.phase || 'undefined' });
-      
-      if (historyData.length >= 15) {
-        const stateBefore = getState(historyData);
-        historyData.push(r);
-        const stateAfter = getState(historyData);
-        updateRL(stateBefore, lastChosen.pred, correct ? 1 : -1, stateAfter);
-        historyData.pop();
-      }
+      updateMemory(r, lastChosen);
     }
     
     historyData.push(r);
@@ -591,14 +507,13 @@ window.MetaBotCore = (function() {
     calculateKelly: (chosen) => {
       if (!chosen) return 0;
       const winRate = stats.total > 0 ? stats.correct / stats.total : 0.5;
-      const p = winRate;
-      const q = 1 - p;
-      const kelly = (p - q);
-      const adjustedKelly = kelly * chosen.conf;
-      return Math.max(0, Math.min(0.25, adjustedKelly));
+      const kelly = (winRate - (1 - winRate));
+      return Math.max(0, Math.min(0.25, kelly * chosen.conf));
     },
     calculateAIScore,
     generateInsights
   };
 
 })();
+
+console.log('✅ MetaBotCore loaded successfully');
