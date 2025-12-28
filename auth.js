@@ -3,7 +3,7 @@
   'use strict';
 
   const VALID_PASSWORD = 'toolvip9'; // ĐỔI MẬT KHẨU TẠI ĐÂY
-  const PASSWORD_VERSION = 'vư'; // TĂNG LÊN KHI ĐỔI PASS (v1, v2, v3...)
+  const PASSWORD_VERSION = 'v2'; // TĂNG LÊN KHI ĐỔI PASS (v1, v2, v3...)
   
   const SESSION_KEY = 'metabot_session';
   const SESSION_DURATION = 24 * 60 * 60 * 1000;
