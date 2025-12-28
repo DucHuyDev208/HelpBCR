@@ -2,11 +2,12 @@
 (function() {
   'use strict';
 
-  const VALID_PASSWORD = 'toolvip9'; // ĐỔI MẬT KHẨU TẠI ĐÂY
-  const PASSWORD_VERSION = 'v2'; // TĂNG LÊN KHI ĐỔI PASS (v1, v2, v3...)
+  const VALID_PASSWORD = 'metabot2024'; // ĐỔI MẬT KHẨU TẠI ĐÂY
+  const PASSWORD_VERSION = 'v1'; // TĂNG LÊN KHI ĐỔI PASS (v1, v2, v3...)
   
   const SESSION_KEY = 'metabot_session';
   const SESSION_DURATION = 24 * 60 * 60 * 1000;
+  const TAB_CLOSE_KEY = 'metabot_tab_closed';
 
   const authOverlay = document.getElementById('authOverlay');
   const appContent = document.getElementById('appContent');
@@ -14,8 +15,32 @@
   const loginBtn = document.getElementById('loginBtn');
   const authError = document.getElementById('authError');
 
+  // Kiểm tra xem tab có bị đóng trước đó không
+  function wasTabClosed() {
+    const tabClosed = sessionStorage.getItem(TAB_CLOSE_KEY);
+    return tabClosed === 'true';
+  }
+
+  // Đánh dấu tab đang mở
+  function markTabOpen() {
+    sessionStorage.setItem(TAB_CLOSE_KEY, 'false');
+  }
+
+  // Đánh dấu tab đã đóng
+  function markTabClosed() {
+    sessionStorage.setItem(TAB_CLOSE_KEY, 'true');
+  }
+
   function checkSession() {
     try {
+      // Nếu tab bị đóng trước đó, reload để reset mọi thứ
+      if (wasTabClosed()) {
+        console.log('🔄 Tab was closed - Reloading...');
+        markTabOpen();
+        window.location.reload();
+        return false;
+      }
+
       const session = localStorage.getItem(SESSION_KEY);
       if (session) {
         const data = JSON.parse(session);
@@ -30,6 +55,7 @@
         
         // Kiểm tra session còn hạn không
         if (now - data.timestamp < SESSION_DURATION) {
+          markTabOpen();
           unlockApp();
           return true;
         } else {
@@ -40,6 +66,7 @@
       console.error('Session check error:', e);
       localStorage.removeItem(SESSION_KEY);
     }
+    markTabOpen();
     return false;
   }
 
@@ -48,9 +75,10 @@
       const session = {
         timestamp: Date.now(),
         version: '9.0',
-        passwordVersion: PASSWORD_VERSION // Lưu password version
+        passwordVersion: PASSWORD_VERSION
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      markTabOpen();
     } catch (e) {
       console.error('Session creation error:', e);
     }
@@ -103,6 +131,25 @@
     }
   });
 
+  // Phát hiện khi tab/window sắp đóng
+  window.addEventListener('beforeunload', () => {
+    markTabClosed();
+  });
+
+  // Phát hiện khi page bị unload (đóng tab, reload, navigate away)
+  window.addEventListener('unload', () => {
+    markTabClosed();
+  });
+
+  // Phát hiện khi page được load lại sau khi đóng
+  window.addEventListener('pageshow', (event) => {
+    // Nếu page load từ cache (back/forward button)
+    if (event.persisted) {
+      console.log('🔄 Page loaded from cache - Reloading...');
+      window.location.reload();
+    }
+  });
+
   if (!checkSession()) {
     passwordInput.focus();
   }
@@ -110,9 +157,9 @@
   window.MetaBotAuth = {
     logout: function() {
       localStorage.removeItem(SESSION_KEY);
+      markTabClosed();
       window.location.reload();
     },
-    // Hàm kiểm tra phiên bản password (tự động chạy mỗi 10 giây)
     checkPasswordVersion: function() {
       const session = localStorage.getItem(SESSION_KEY);
       if (session) {
@@ -134,5 +181,7 @@
   setInterval(() => {
     window.MetaBotAuth.checkPasswordVersion();
   }, 10000);
+
+  console.log('🔐 Auth system ready');
 
 })();
