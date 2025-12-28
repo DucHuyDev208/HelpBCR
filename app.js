@@ -29,6 +29,7 @@
   const btnReset = document.getElementById('btnReset');
 
   let collapsed = false;
+  let isAppActive = true;
 
   function initApp() {
     if (!window.MetaBotCore) {
@@ -207,6 +208,8 @@
     }
 
     function render() {
+      if (!isAppActive) return;
+      
       renderHistory();
       renderStats();
       
@@ -264,6 +267,51 @@
       else if (e.key === 'p' || e.key === 'P') handlePlayer();
       else if (e.key === 'u' || e.key === 'U') handleUndo();
       else if (e.key === 'r' || e.key === 'R') handleReset();
+    });
+
+    // Phát hiện khi tab được focus lại sau khi bị sleep
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        // Tab được focus lại - render lại để đảm bảo mọi thứ hoạt động
+        console.log('🔄 Tab active - Refreshing display...');
+        isAppActive = true;
+        render();
+      } else {
+        isAppActive = false;
+      }
+    });
+
+    // Phát hiện khi cửa sổ được focus lại
+    window.addEventListener('focus', () => {
+      console.log('🔄 Window focused - Refreshing display...');
+      isAppActive = true;
+      render();
+    });
+
+    window.addEventListener('blur', () => {
+      isAppActive = false;
+    });
+
+    // Wake-up detection: Detect khi user click/touch lại sau khi sleep
+    let lastActivity = Date.now();
+    
+    function handleActivity() {
+      const now = Date.now();
+      const timeSinceLastActivity = now - lastActivity;
+      
+      // Nếu không có hoạt động trong 5 phút, có thể đã sleep
+      if (timeSinceLastActivity > 5 * 60 * 1000) {
+        console.log('🔄 Waking up from sleep - Refreshing...');
+        isAppActive = true;
+        render();
+      }
+      
+      lastActivity = now;
+    }
+
+    // Listen các sự kiện user interaction
+    ['click', 'touchstart', 'mousemove', 'keydown'].forEach(eventType => {
+      document.addEventListener(eventType, handleActivity, { passive: true });
     });
 
     render();
