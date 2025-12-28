@@ -2,12 +2,11 @@
 (function() {
   'use strict';
 
-  const VALID_PASSWORD = 'toolvip9'; // ĐỔI MẬT KHẨU TẠI ĐÂY
-  const PASSWORD_VERSION = 'v2'; // TĂNG LÊN KHI ĐỔI PASS (v1, v2, v3...)
+  const VALID_PASSWORD = 'metabot2024'; // ĐỔI MẬT KHẨU TẠI ĐÂY
+  const PASSWORD_VERSION = 'v1'; // TĂNG LÊN KHI ĐỔI PASS (v1, v2, v3...)
   
   const SESSION_KEY = 'metabot_session';
   const SESSION_DURATION = 24 * 60 * 60 * 1000;
-  const PAGE_LOAD_KEY = 'metabot_page_loaded';
 
   const authOverlay = document.getElementById('authOverlay');
   const appContent = document.getElementById('appContent');
@@ -22,7 +21,7 @@
         const data = JSON.parse(session);
         const now = Date.now();
         
-        // Kiểm tra password version - nếu khác thì đá ra
+        // Kiểm tra password version
         if (data.passwordVersion !== PASSWORD_VERSION) {
           console.log('Password đã thay đổi - yêu cầu đăng nhập lại');
           localStorage.removeItem(SESSION_KEY);
@@ -60,10 +59,6 @@
   function unlockApp() {
     authOverlay.style.display = 'none';
     appContent.classList.add('unlocked');
-    
-    // Đánh dấu page đã load thành công
-    sessionStorage.setItem(PAGE_LOAD_KEY, 'true');
-    
     window.dispatchEvent(new CustomEvent('metabot:unlocked'));
   }
 
@@ -108,15 +103,6 @@
     }
   });
 
-  // Phát hiện khi page được load lại sau khi đóng
-  window.addEventListener('pageshow', (event) => {
-    // Nếu page load từ cache (back/forward button) và đã có session
-    if (event.persisted && localStorage.getItem(SESSION_KEY)) {
-      console.log('🔄 Page loaded from cache - Reloading to refresh app state...');
-      window.location.reload();
-    }
-  });
-
   if (!checkSession()) {
     passwordInput.focus();
   }
@@ -124,7 +110,6 @@
   window.MetaBotAuth = {
     logout: function() {
       localStorage.removeItem(SESSION_KEY);
-      sessionStorage.removeItem(PAGE_LOAD_KEY);
       window.location.reload();
     },
     checkPasswordVersion: function() {
